@@ -1,0 +1,45 @@
+--- 
+networks: 
+  database: 
+    driver: bridge
+services: 
+  adminer: 
+    image: adminer
+    networks: 
+      - database
+    ports: 
+      - "9030:9030"
+    restart: on-failure
+  db: 
+    build: ./mysqlImage/
+    command: "--default-authentication-plugin=mysql_native_password"
+    container_name: mysql_db
+    environment: 
+      MYSQL_ROOT_PASSWORD: root
+    networks: 
+      - database
+    ports: 
+      - "3360:3306"
+    restart: on-failure
+    volumes: 
+      - "./mysql:/var/lib/mysql"
+  nodejs: 
+    build: ./apiNodejs/
+    command: 
+      - ./wait-for-it.sh
+      - "db:3306"
+      - "--"
+      - nodemon
+      - server.js
+    depends_on: 
+      - db
+      - adminer
+    networks: 
+      - database
+    ports: 
+      - "3000:3000"
+      - "3001:3360"
+    restart: always
+    volumes: 
+      - "./apiNodejs/:/user/src/app"
+version: "3.3"
